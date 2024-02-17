@@ -8,7 +8,7 @@ use JavierLeon9966\ProperDuels\utils\ContentsSerializer;
 use pocketmine\nbt\LittleEndianNbtSerializer;
 use pocketmine\nbt\tag\ListTag;
 use pocketmine\nbt\TreeRoot;
-use poggit\libasynql\base\DataConnectorImpl;
+use JavierLeon9966\ProperDuels\libs\_d9f3b3f6d4101d2b\poggit\libasynql\base\DataConnectorImpl;
 
 final class KitManager{
 

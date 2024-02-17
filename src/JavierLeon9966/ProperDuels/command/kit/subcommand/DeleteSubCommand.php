@@ -4,8 +4,8 @@ declare(strict_types = 1);
 
 namespace JavierLeon9966\ProperDuels\command\kit\subcommand;
 
-use CortexPE\Commando\args\RawStringArgument;
-use CortexPE\Commando\BaseSubCommand;
+use JavierLeon9966\ProperDuels\libs\_d9f3b3f6d4101d2b\CortexPE\Commando\args\RawStringArgument;
+use JavierLeon9966\ProperDuels\libs\_d9f3b3f6d4101d2b\CortexPE\Commando\BaseSubCommand;
 
 use JavierLeon9966\ProperDuels\kit\KitManager;
 
