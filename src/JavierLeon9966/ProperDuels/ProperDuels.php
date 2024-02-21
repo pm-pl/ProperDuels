@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace JavierLeon9966\ProperDuels;
 
-use JavierLeon9966\ProperDuels\libs\_d9f3b3f6d4101d2b\CortexPE\Commando\PacketHooker;
+use JavierLeon9966\ProperDuels\libs\_a5e44acb2b3b7d84\CortexPE\Commando\PacketHooker;
 
 use JavierLeon9966\ProperDuels\arena\ArenaManager;
 use JavierLeon9966\ProperDuels\command\arena\ArenaCommand;
@@ -14,7 +14,7 @@ use JavierLeon9966\ProperDuels\game\GameManager;
 use JavierLeon9966\ProperDuels\kit\KitManager;
 use JavierLeon9966\ProperDuels\session\SessionManager;
 
-use JavierLeon9966\ProperDuels\libs\_d9f3b3f6d4101d2b\poggit\libasynql\libasynql;
+use JavierLeon9966\ProperDuels\libs\_a5e44acb2b3b7d84\poggit\libasynql\libasynql;
 
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\TextFormat;
