@@ -7,9 +7,9 @@ namespace JavierLeon9966\ProperDuels\command\arena\subcommand;
 use JavierLeon9966\ProperDuels\arena\ArenaManager;
 use JavierLeon9966\ProperDuels\kit\KitManager;
 use pocketmine\plugin\PluginBase;
-use JavierLeon9966\ProperDuels\libs\_d9c23dd9c08132e5\CortexPE\Commando\args\{RawStringArgument, Vector3Argument};
-use JavierLeon9966\ProperDuels\libs\_d9c23dd9c08132e5\CortexPE\Commando\BaseSubCommand;
-use JavierLeon9966\ProperDuels\libs\_d9c23dd9c08132e5\CortexPE\Commando\constraint\InGameRequiredConstraint;
+use JavierLeon9966\ProperDuels\libs\_b680bb6a8dc4d618\CortexPE\Commando\args\{RawStringArgument, Vector3Argument};
+use JavierLeon9966\ProperDuels\libs\_b680bb6a8dc4d618\CortexPE\Commando\BaseSubCommand;
+use JavierLeon9966\ProperDuels\libs\_b680bb6a8dc4d618\CortexPE\Commando\constraint\InGameRequiredConstraint;
 
 use JavierLeon9966\ProperDuels\arena\Arena;
 

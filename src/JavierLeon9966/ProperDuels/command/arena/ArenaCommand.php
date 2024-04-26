@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace JavierLeon9966\ProperDuels\command\arena;
 
-use JavierLeon9966\ProperDuels\libs\_d9c23dd9c08132e5\CortexPE\Commando\BaseCommand;
+use JavierLeon9966\ProperDuels\libs\_b680bb6a8dc4d618\CortexPE\Commando\BaseCommand;
 
 use JavierLeon9966\ProperDuels\command\arena\subcommand\{CreateSubCommand, ListSubCommand, DeleteSubCommand};
 

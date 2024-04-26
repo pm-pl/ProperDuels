@@ -4,9 +4,9 @@ declare(strict_types = 1);
 
 namespace JavierLeon9966\ProperDuels\command\duel\subcommand;
 
-use JavierLeon9966\ProperDuels\libs\_d9c23dd9c08132e5\CortexPE\Commando\args\RawStringArgument;
-use JavierLeon9966\ProperDuels\libs\_d9c23dd9c08132e5\CortexPE\Commando\BaseSubCommand;
-use JavierLeon9966\ProperDuels\libs\_d9c23dd9c08132e5\CortexPE\Commando\constraint\InGameRequiredConstraint;
+use JavierLeon9966\ProperDuels\libs\_b680bb6a8dc4d618\CortexPE\Commando\args\RawStringArgument;
+use JavierLeon9966\ProperDuels\libs\_b680bb6a8dc4d618\CortexPE\Commando\BaseSubCommand;
+use JavierLeon9966\ProperDuels\libs\_b680bb6a8dc4d618\CortexPE\Commando\constraint\InGameRequiredConstraint;
 
 use JavierLeon9966\ProperDuels\arena\ArenaManager;
 
