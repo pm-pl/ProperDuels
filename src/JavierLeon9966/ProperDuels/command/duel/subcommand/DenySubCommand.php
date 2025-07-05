@@ -4,16 +4,18 @@ declare(strict_types = 1);
 
 namespace JavierLeon9966\ProperDuels\command\duel\subcommand;
 
-use JavierLeon9966\ProperDuels\libs\_b680bb6a8dc4d618\CortexPE\Commando\args\RawStringArgument;
-use JavierLeon9966\ProperDuels\libs\_b680bb6a8dc4d618\CortexPE\Commando\BaseSubCommand;
-use JavierLeon9966\ProperDuels\libs\_b680bb6a8dc4d618\CortexPE\Commando\constraint\InGameRequiredConstraint;
-
+use JavierLeon9966\ProperDuels\libs\_a3e67a8444f8d3fb\CortexPE\Commando\args\RawStringArgument;
+use JavierLeon9966\ProperDuels\libs\_a3e67a8444f8d3fb\CortexPE\Commando\BaseSubCommand;
+use JavierLeon9966\ProperDuels\libs\_a3e67a8444f8d3fb\CortexPE\Commando\constraint\InGameRequiredConstraint;
+use JavierLeon9966\ProperDuels\libs\_a3e67a8444f8d3fb\CortexPE\Commando\exception\ArgumentOrderException;
+use JavierLeon9966\ProperDuels\config\Config;
 use JavierLeon9966\ProperDuels\session\SessionManager;
 use pocketmine\command\CommandSender;
 use pocketmine\lang\KnownTranslationFactory;
 use pocketmine\player\Player;
-use pocketmine\utils\{AssumptionFailedError, Config, TextFormat};
 use pocketmine\plugin\PluginBase;
+use pocketmine\utils\{AssumptionFailedError, TextFormat};
+use JavierLeon9966\ProperDuels\libs\_a3e67a8444f8d3fb\SOFe\InfoAPI\InfoAPI;
 
 class DenySubCommand extends BaseSubCommand{
 
@@ -23,40 +25,37 @@ class DenySubCommand extends BaseSubCommand{
 		string $name,
 		private readonly Config $config,
 		private readonly SessionManager $sessionManager,
-		string $description = "",
+		string $description = '',
 		array $aliases = []
 	){
 		parent::__construct($plugin, $name, $description, $aliases);
 	}
 
 	/** @param array<array-key, mixed> $args */
-	public function onRun(CommandSender $sender, string $commandLabel, array $args): void{
-		$player = $sender->getServer()->getPlayerByPrefix($args['player']);
+	public function onRun(CommandSender $sender, string $aliasUsed, array $args): void{
+		/** @var array{'player': string} $args */
+
+		$player = $sender->getServer()->getPlayerExact($args['player']);
 		if($player === null){
 			$sender->sendMessage(KnownTranslationFactory::commands_generic_player_notFound()->prefix(TextFormat::RED));
 			return;
 		}
 
-		$config = $this->plugin->getConfig();
-
 		if(!$sender instanceof Player){
 			throw new AssumptionFailedError(InGameRequiredConstraint::class . ' should have prevented this');
 		}
-		$session = $this->sessionManager->get($senderUUID = $sender->getUniqueId()->getBytes());
-		if($session === null){
-			$this->sessionManager->add($sender);
-			$session = $this->sessionManager->get($senderUUID);
-		}
+		$session = $this->sessionManager->get($sender->getUniqueId()->getBytes())
+			?? throw new AssumptionFailedError('This should not be null at this point');
 
 		if(!$session->hasInvite($playerUUID = $player->getUniqueId()->getBytes())){
-			$sender->sendMessage($this->config->getNested('request.invite.playerNotFound'));
+			$sender->sendMessage(InfoAPI::render($this->plugin, $this->config->request->invite->playerNotFound, [], $sender));
 			return;
 		}
 
 		$session->removeInvite($playerUUID);
 
-		$sender->sendMessage(str_replace('{player}', $player->getDisplayName(), $this->config->getNested('request.deny.success')));
-		$player->sendMessage(str_replace('{player}', $sender->getDisplayName(), $this->config->getNested('request.deny.message')));
+		$sender->sendMessage(InfoAPI::render($this->plugin, $this->config->request->deny->success, ['player' => $player], $sender));
+		$player->sendMessage(InfoAPI::render($this->plugin, $this->config->request->deny->message, ['player' => $sender], $player));
 	}
 
 	public function prepare(): void{
@@ -64,6 +63,10 @@ class DenySubCommand extends BaseSubCommand{
 
 		$this->setPermission('properduels.command.duel.deny');
 
-		$this->registerArgument(0, new RawStringArgument('player'));
+		try{
+			$this->registerArgument(0, new RawStringArgument('player'));
+		}catch(ArgumentOrderException $e){
+			throw new AssumptionFailedError('This should never happen', 0, $e);
+		}
 	}
 }
