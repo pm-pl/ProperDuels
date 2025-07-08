@@ -4,10 +4,10 @@ declare(strict_types = 1);
 
 namespace JavierLeon9966\ProperDuels\command\duel\subcommand;
 
-use JavierLeon9966\ProperDuels\libs\_a3e67a8444f8d3fb\CortexPE\Commando\args\RawStringArgument;
-use JavierLeon9966\ProperDuels\libs\_a3e67a8444f8d3fb\CortexPE\Commando\BaseSubCommand;
-use JavierLeon9966\ProperDuels\libs\_a3e67a8444f8d3fb\CortexPE\Commando\constraint\InGameRequiredConstraint;
-use JavierLeon9966\ProperDuels\libs\_a3e67a8444f8d3fb\CortexPE\Commando\exception\ArgumentOrderException;
+use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\args\RawStringArgument;
+use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\BaseSubCommand;
+use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\constraint\InGameRequiredConstraint;
+use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\exception\ArgumentOrderException;
 use JavierLeon9966\ProperDuels\config\Config;
 use JavierLeon9966\ProperDuels\game\Game;
 use JavierLeon9966\ProperDuels\game\GameManager;
@@ -19,7 +19,7 @@ use pocketmine\lang\KnownTranslationFactory;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\{AssumptionFailedError, TextFormat};
-use JavierLeon9966\ProperDuels\libs\_a3e67a8444f8d3fb\SOFe\InfoAPI\InfoAPI;
+use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\SOFe\InfoAPI\InfoAPI;
 
 class AcceptSubCommand extends BaseSubCommand{
 
