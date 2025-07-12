@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS Kits(
   Name VARCHAR(32) NOT NULL,
   Armor LONGBLOB NOT NULL,
   Inventory LONGBLOB NOT NULL,
+  Enabled BIT DEFAULT 1 NOT NULL,
   PRIMARY KEY(Name)
 );
 -- #    }
@@ -24,7 +25,7 @@ CREATE TABLE IF NOT EXISTS Arenas(
   SecondSpawnPosZ DOUBLE NOT NULL,
   Kit VARCHAR(32),
   PRIMARY KEY(Name),
-  FOREIGN KEY(Kit) REFERENCES Kits(Name) ON DELETE SET NULL
+  FOREIGN KEY(Kit) REFERENCES Kits(Name) ON DELETE SET NULL ON UPDATE CASCADE
 );
 -- #    }
 -- #  }
@@ -90,40 +91,12 @@ DELETE FROM Arenas
 WHERE Name =:name;
 -- #    }
 -- #  }
--- #  { reset
--- #    { kits
-DROP TABLE Kits;
--- # &
-CREATE TABLE Kits(
-  Name VARCHAR(32) NOT NULL,
-  Armor LONGBLOB NOT NULL,
-  Inventory LONGBLOB NOT NULL,
-  PRIMARY KEY(Name)
-);
--- #    }
--- #    { arenas
-DROP TABLE Arenas;
--- # &
-CREATE TABLE Arenas(
-  Name VARCHAR(32) NOT NULL,
-  LevelName VARCHAR(64) NOT NULL,
-  FirstSpawnPosX DOUBLE NOT NULL,
-  FirstSpawnPosY DOUBLE NOT NULL,
-  FirstSpawnPosZ DOUBLE NOT NULL,
-  SecondSpawnPosX DOUBLE NOT NULL,
-  SecondSpawnPosY DOUBLE NOT NULL,
-  SecondSpawnPosZ DOUBLE NOT NULL,
-  Kit VARCHAR(32),
-  PRIMARY KEY(Name),
-  FOREIGN KEY(Kit) REFERENCES Kits(Name) ON DELETE SET NULL
-);
--- #    }
--- #  }
 -- #  { get
 -- #    { kit
 -- #      :name string
 SELECT * FROM Kits
-WHERE Name = :name;
+WHERE Name = :name
+  AND Enabled = 1;
 -- #    }
 -- #    { arena
 -- #      :name string
@@ -139,6 +112,7 @@ LIMIT 1;
 -- #    }
 -- #    { kit
 SELECT * FROM Kits
+WHERE Enabled = 1
 ORDER BY RANDOM()
 LIMIT 1;
 -- #    }
@@ -155,6 +129,86 @@ LIMIT :limit OFFSET :offset;
 -- #      :limit int
 SELECT * FROM Arenas
 LIMIT :limit OFFSET :offset;
+-- #    }
+-- #  }
+-- #  { check_for_migration
+-- #    { kits
+SELECT
+    EXISTS(
+        SELECT 1
+        FROM pragma_table_info('Kits')
+        WHERE name='Enabled'
+    ) AS migrationNeeded;
+-- #    }
+-- #    { arenas
+SELECT
+    EXISTS(
+        SELECT 1
+        FROM pragma_foreign_key_list('Arenas')
+        WHERE on_update <> 'CASCADE'
+    ) AS migrationNeeded;
+-- #    }
+-- #  }
+-- #  { migrate
+-- #    { kits
+ALTER TABLE Kits
+    ADD COLUMN Enabled INTEGER NOT NULL DEFAULT 1;
+-- #    }
+-- #    { arenas
+PRAGMA foreign_keys = OFF;
+-- # &
+SAVEPOINT migrate_arena_fk;
+-- # &
+CREATE TABLE IF NOT EXISTS Arenas_new (
+    Name            VARCHAR(32)  NOT NULL PRIMARY KEY,
+    LevelName       VARCHAR(64)  NOT NULL,
+    FirstSpawnPosX  DOUBLE       NOT NULL,
+    FirstSpawnPosY  DOUBLE       NOT NULL,
+    FirstSpawnPosZ  DOUBLE       NOT NULL,
+    SecondSpawnPosX DOUBLE       NOT NULL,
+    SecondSpawnPosY DOUBLE       NOT NULL,
+    SecondSpawnPosZ DOUBLE       NOT NULL,
+    Kit             VARCHAR(32),
+    FOREIGN KEY(Kit)
+        REFERENCES Kits(Name)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
+);
+-- # &
+INSERT INTO Arenas_new
+SELECT * FROM Arenas;
+-- # &
+ALTER TABLE Arenas RENAME TO Arenas_old;
+-- # &
+ALTER TABLE Arenas_new RENAME TO Arenas;
+-- # &
+DROP TABLE IF EXISTS Arenas_old;
+-- # &
+RELEASE migrate_arena_fk;
+-- # &
+PRAGMA foreign_keys = ON;
+-- #    }
+-- #  }
+-- #  { update
+-- #    { kit
+-- #      :name string
+-- #      :armor string
+-- #      :inventory string
+-- #      :newName string
+UPDATE Kits
+SET Armor = :armor,
+    Inventory = :inventory,
+    Name = :newName
+WHERE Name = :name;
+-- #    }
+-- #  }
+-- #  { set_enabled
+-- #    { kit
+-- #      :name string
+-- #      :enabled bool
+UPDATE Kits
+SET Enabled = :enabled
+WHERE Name = :name;
 -- #    }
 -- #  }
 -- #}

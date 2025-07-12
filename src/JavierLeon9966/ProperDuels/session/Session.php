@@ -13,7 +13,7 @@ use pocketmine\player\Player;
 use pocketmine\plugin\Plugin;
 use pocketmine\plugin\PluginManager;
 use pocketmine\Server;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\SOFe\InfoAPI\InfoAPI;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\SOFe\InfoAPI\InfoAPI;
 
 final class Session{
 	/** @phpstan-var array<string, Invite> */

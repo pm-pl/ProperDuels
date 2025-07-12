@@ -4,28 +4,76 @@ declare(strict_types = 1);
 
 namespace JavierLeon9966\ProperDuels\arena;
 
+use Closure;
 use Generator;
 use JavierLeon9966\ProperDuels\config\DatabaseType;
 use JavierLeon9966\ProperDuels\RawQueries;
 use pocketmine\math\Vector3;
 use pocketmine\utils\AssumptionFailedError;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\poggit\libasynql\SqlError;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\SOFe\AwaitGenerator\Await;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\poggit\libasynql\SqlError;
+use RuntimeException;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\SOFe\AwaitGenerator\Await;
 
 final readonly class ArenaManager{
 
 	private function __construct(private RawQueries $queries){
 	}
 
-	/** @return Generator<mixed, Await::RESOLVE|null|Await::RESOLVE_MULTI|Await::REJECT|Await::ONCE|Await::ALL|Await::RACE|Generator<mixed, mixed, mixed, mixed>, mixed, ArenaManager> */
-	public static function create(RawQueries $queries, DatabaseType $databaseType): Generator{
-		$gen = $queries->initArenas();
-		if($databaseType === DatabaseType::Mysql){
-			yield from $gen;
+	/**
+	 * @param null|\Closure(ArenaManager): Generator<mixed, Await::RESOLVE|null|Await::RESOLVE_MULTI|Await::REJECT|Await::ONCE|Await::ALL|Await::RACE|Generator<mixed, mixed, mixed, mixed>, mixed, void> $extraSetup
+	 * @return Generator<mixed, Await::RESOLVE|null|Await::RESOLVE_MULTI|Await::REJECT|Await::ONCE|Await::ALL|Await::RACE|Generator<mixed, mixed, mixed, mixed>, mixed, ArenaManager>
+	 */
+	public static function create(RawQueries $queries, DatabaseType $databaseType, ?Closure $extraSetup = null): Generator{
+		$arenaManager = new self($queries);
+		if($databaseType === DatabaseType::Sqlite3){
+			yield from $arenaManager->sqlite3Init();
 		}else{
-			Await::g2c($gen);
+			yield from $arenaManager->mysqlInit();
 		}
-		return new self($queries);
+		if($extraSetup !== null){
+			yield from $extraSetup($arenaManager);
+		}
+		return $arenaManager;
+	}
+
+	/** @return Generator<mixed, Await::RESOLVE|null|Await::RESOLVE_MULTI|Await::REJECT|Await::ONCE|Await::ALL|Await::RACE|Generator<mixed, mixed, mixed, mixed>, mixed, void> */
+	private function sqlite3Init(): Generator{
+		/** @var array{array{'migrationNeeded': int<0, 1>}} $rows */
+		[$rows,] = yield from Await::all([$this->queries->checkForMigrationArenas(), $this->queries->initArenas()]);
+		if($rows[0]['migrationNeeded'] === 1){
+			yield from $this->queries->migrateArenas();
+		}
+	}
+
+	/** @return Generator<mixed, Await::RESOLVE|null|Await::RESOLVE_MULTI|Await::REJECT|Await::ONCE|Await::ALL|Await::RACE|Generator<mixed, mixed, mixed, mixed>, mixed, void> */
+	private function mysqlInit(): Generator{
+		try{
+			yield from $this->queries->initArenas();
+		}catch(SqlError $e){
+			if(preg_match('/^procedure [^ ]+ already exists$/i', $e->getErrorMessage()) === 1){
+				// ignore
+			}else{
+				throw new AssumptionFailedError('This should never happen', 0, $e);
+			}
+		}
+
+		try{
+			/**
+			 * @var array{array{'migrationNeeded': int<0, 1>}} $migrationRows
+			 * @var list<array{Name: string, Arena: string}> $rows
+			 */
+			[$migrationRows, $rows] = yield from Await::all([$this->queries->checkForMigrationArenas(), $this->queries->loadOldArenas()]);
+			if($migrationRows[0]['migrationNeeded'] === 0){
+				return;
+			}
+		}catch(SqlError $e){
+			if(str_contains(strtolower($e->getMessage()), 'unknown column')){
+				return;
+			}else{
+				throw new AssumptionFailedError('This should never happen', 0, $e);
+			}
+		}
+		yield from $this->migrateOldRows($rows);
 	}
 
 	/**
@@ -129,5 +177,20 @@ final readonly class ArenaManager{
 			new Vector3($row['SecondSpawnPosX'], $row['SecondSpawnPosY'], $row['SecondSpawnPosZ']),
 			$row['Kit']
 		);
+	}
+
+	/**
+	 * @param list<array{Name: string, Arena: string}> $rows
+	 * @return Generator<mixed, Await::RESOLVE|null|Await::RESOLVE_MULTI|Await::REJECT|Await::ONCE|Await::ALL|Await::RACE|Generator<mixed, mixed, mixed, mixed>, mixed, void>
+	 */
+	public function migrateOldRows(array $rows): Generator{
+		/** @var array<string, Arena> $unserializedArenas */
+		$unserializedArenas = array_map(unserialize(...), array_column($rows, 'Arena', 'Name'));
+		try{
+			$gens = array_map($this->add(...), $unserializedArenas);
+		}catch(RuntimeException $e){
+			throw new AssumptionFailedError('This should never happen', 0, $e);
+		}
+		yield from Await::all($gens);
 	}
 }

@@ -6,10 +6,10 @@ namespace JavierLeon9966\ProperDuels\command\arena\subcommand;
 
 use Generator;
 use JavierLeon9966\ProperDuels\arena\ArenaCreationStatus;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\args\{RawStringArgument, Vector3Argument};
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\BaseSubCommand;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\constraint\InGameRequiredConstraint;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\exception\ArgumentOrderException;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\CortexPE\Commando\args\{RawStringArgument, Vector3Argument};
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\CortexPE\Commando\BaseSubCommand;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\CortexPE\Commando\constraint\InGameRequiredConstraint;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\CortexPE\Commando\exception\ArgumentOrderException;
 use JavierLeon9966\ProperDuels\arena\Arena;
 use JavierLeon9966\ProperDuels\arena\ArenaManager;
 use pocketmine\command\CommandSender;
@@ -17,7 +17,7 @@ use pocketmine\math\Vector3;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\{AssumptionFailedError, TextFormat};
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\SOFe\AwaitGenerator\Await;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\SOFe\AwaitGenerator\Await;
 
 class CreateSubCommand extends BaseSubCommand{
 

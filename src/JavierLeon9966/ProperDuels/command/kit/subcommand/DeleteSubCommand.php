@@ -4,9 +4,9 @@ declare(strict_types = 1);
 
 namespace JavierLeon9966\ProperDuels\command\kit\subcommand;
 
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\args\RawStringArgument;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\BaseSubCommand;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\exception\ArgumentOrderException;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\CortexPE\Commando\args\RawStringArgument;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\CortexPE\Commando\BaseSubCommand;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\CortexPE\Commando\exception\ArgumentOrderException;
 use Generator;
 use JavierLeon9966\ProperDuels\kit\KitManager;
 use pocketmine\command\CommandSender;
@@ -14,7 +14,7 @@ use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\TextFormat;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\SOFe\AwaitGenerator\Await;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\SOFe\AwaitGenerator\Await;
 
 class DeleteSubCommand extends BaseSubCommand{
 

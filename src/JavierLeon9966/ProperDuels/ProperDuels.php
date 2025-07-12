@@ -4,8 +4,8 @@ declare(strict_types = 1);
 
 namespace JavierLeon9966\ProperDuels;
 
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\exception\HookAlreadyRegistered;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\CortexPE\Commando\PacketHooker;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\CortexPE\Commando\exception\HookAlreadyRegistered;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\CortexPE\Commando\PacketHooker;
 use Generator;
 use JavierLeon9966\ProperDuels\arena\Arena;
 use JavierLeon9966\ProperDuels\arena\ArenaManager;
@@ -36,16 +36,15 @@ use pocketmine\plugin\PluginManager;
 use pocketmine\Server;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\ConfigLoadException;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\poggit\libasynql\DataConnector;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\poggit\libasynql\ExtensionMissingException;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\poggit\libasynql\libasynql;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\poggit\libasynql\SqlError;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\poggit\libasynql\DataConnector;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\poggit\libasynql\ExtensionMissingException;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\poggit\libasynql\libasynql;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\poggit\libasynql\SqlError;
 use RuntimeException;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\SOFe\AwaitGenerator\Await;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\SOFe\AwaitGenerator\Loading;
-use JavierLeon9966\ProperDuels\libs\_45854326f445bd2c\SOFe\InfoAPI\InfoAPI;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\SOFe\AwaitGenerator\Await;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\SOFe\AwaitGenerator\Loading;
+use JavierLeon9966\ProperDuels\libs\_e2755df89d4a1f9f\SOFe\InfoAPI\InfoAPI;
 use Symfony\Component\Filesystem\Path;
-use Throwable;
 
 final class ProperDuels extends PluginBase{
 
@@ -99,11 +98,15 @@ final class ProperDuels extends PluginBase{
 
 		$unMarshaledConfig = $this->getUnMarshaledConfig();
 
-		$mergedDb = $this->getMergedDb($unMarshaledConfig);
+		$statements = [
+			'sqlite' => Path::join('sqlite', 'stmt.sql'),
+			'mysql' => Path::join('mysql', 'stmt.sql')
+		];
+		$mergedDb = $this->getMergedDb($unMarshaledConfig, $statements);
 
 		$server = $this->getServer();
 		$pluginManager = $server->getPluginManager();
-		$this->setupManagers($mergedDb, $unMarshaledConfig, $pluginManager, $server);
+		$this->setupManagers($mergedDb, $unMarshaledConfig, $pluginManager, $server, $statements);
 
 		try{
 			$pluginManager->registerEvents(new GameListener($unMarshaledConfig, self::$sessionManager), $this);
@@ -150,7 +153,7 @@ final class ProperDuels extends PluginBase{
 				)
 			]);
 
-			$this->getLogger()->info('Finished registering commands.');
+			$this->getLogger()->info('Commands registered');
 		});
 	}
 
@@ -276,52 +279,34 @@ final class ProperDuels extends PluginBase{
 	 * @return Generator<mixed, Await::RESOLVE|null|Await::RESOLVE_MULTI|Await::REJECT|Await::ONCE|Await::ALL|Await::RACE|Generator<mixed, mixed, mixed, mixed>, mixed, void>
 	 * @throws \poggit\libasynql\SqlError
 	 */
-	private function migrateArenasDatabase(Config $unMarshaledConfig, array $statements): Generator{
+	private function migrateSQLiteArenasDatabase(Config $unMarshaledConfig, array $statements): Generator{
 		$arenasDb = libasynql::create(
 			$this,
 			[
-				'type' => $unMarshaledConfig->database->type->value,
+				'type' => DatabaseType::Sqlite3->value,
 				'sqlite' => [
 					'file' => 'arenas.sqlite'
 				],
-				'mysql' => [
-					'host' => $unMarshaledConfig->database->mysql->host,
-					'username' => $unMarshaledConfig->database->mysql->username,
-					'password' => $unMarshaledConfig->database->mysql->password,
-					'schema' => $unMarshaledConfig->database->mysql->schema,
-					'port' => $unMarshaledConfig->database->mysql->port
-				],
-				'worker-limit' => $unMarshaledConfig->database->workerLimit
+				'worker-limit' => 1
 			],
 			$statements
 		);
 		$arenasQueries = new RawQueries($arenasDb);
 
-		$arenas = yield from $arenasQueries->loadArenas();
+		/**
+		 * @var list<array{'Name': string, 'Arena': string}> $arenas
+		 * @var ArenaManager $arenasManager
+		 */
+		[$arenas, $arenasManager] = yield from Await::all([$arenasQueries->loadArenas(), self::$arenaManager->get()]);
 		$arenasDb->close();
 		unlink(Path::join($this->getDataFolder(), 'arenas.sqlite'));
-		/** @var list<array{'Arena': string, 'Name'?: string}>|list<array{'Name': string, 'LevelName': string, 'FirstSpawnPosX': float, 'FirstSpawnPosY': float, 'FirstSpawnPosZ': float, 'SecondSpawnPosX': float, 'SecondSpawnPosY': float, 'SecondSpawnPosZ': float, 'Kit': ?string}> $arenas */
-		if(count($arenas) === 0){
-			return;
-
-		}
-		$arenasManager = yield from self::$arenaManager->get();
-		$gens = [];
 		if(isset($arenas[0]['Arena'])){
-			/** @var array<string, Arena> $unserializedArenas */
-			$unserializedArenas = array_map('unserialize', array_column($arenas, 'Arena', 'Name'));
-			foreach($unserializedArenas as $arena){
-				try{
-					$gens[] = $arenasManager->add($arena);
-				}catch(RuntimeException $e){
-					throw new AssumptionFailedError('This should never happen', 0, $e);
-				}
-			}
-			yield from Await::all($gens);
+			yield from $arenasManager->migrateOldRows($arenas);
 			return;
 		}
 
 		try{
+			$gens = [];
 			/**
 			 * @var string $name
 			 * @var string $levelName
@@ -361,55 +346,33 @@ final class ProperDuels extends PluginBase{
 	 * @return Generator<mixed, Await::RESOLVE|null|Await::RESOLVE_MULTI|Await::REJECT|Await::ONCE|Await::ALL|Await::RACE|Generator<mixed, mixed, mixed, mixed>, mixed, void>
 	 * @throws \poggit\libasynql\SqlError
 	 */
-	private function migrateKitsDatabase(Config $unMarshaledConfig, array $statements): Generator{
+	private function migrateSQLiteKitsDatabase(Config $unMarshaledConfig, array $statements): Generator{
 		$kitsDb = libasynql::create(
 			$this,
 			[
-				'type' => $unMarshaledConfig->database->type->value,
+				'type' => DatabaseType::Sqlite3->value,
 				'sqlite' => [
 					'file' => 'kits.sqlite'
 				],
-				'mysql' => [
-					'host' => $unMarshaledConfig->database->mysql->host,
-					'username' => $unMarshaledConfig->database->mysql->username,
-					'password' => $unMarshaledConfig->database->mysql->password,
-					'schema' => $unMarshaledConfig->database->mysql->schema,
-					'port' => $unMarshaledConfig->database->mysql->port
-				],
-				'worker-limit' => $unMarshaledConfig->database->workerLimit
+				'worker-limit' => 1
 			],
 			$statements
 		);
 		$kitsQueries = new RawQueries($kitsDb);
 
-		$kits = yield from $kitsQueries->loadKits();
+		/**
+		 * @var list<array{Name: string, Kit: string}>|list<array{Name: string, Armor: string, Inventory: string}> $kits
+		 * @var KitManager $kitsManager
+		 */
+		[$kits, $kitsManager] = yield from Await::all([$kitsQueries->loadKits(), self::$kitManager->get()]);
 		$kitsDb->close();
 		unlink(Path::join($this->getDataFolder(), 'kits.sqlite'));
-		/** @var list<array{Name: string, Kit: string}|array{Name: string, Armor: string, Inventory: string}> $kits */
-		if(count($kits) === 0){
-			return;
-		}
-		$kitsManager = yield from self::$kitManager->get();
-		$gens = [];
 		if(isset($kits[0]['Kit'])){
-			$kits = array_map(static function(string $serialized): Kit{
-				$deserialized = unserialize($serialized);
-				if(!$deserialized instanceof Kit){
-					throw new AssumptionFailedError('This should never happen');
-				}
-				return $deserialized;
-			}, array_column($kits, 'Kit', 'Name'));
-			foreach($kits as $kit){
-				try{
-					$gens[] = $kitsManager->add($kit);
-				}catch(RuntimeException $e){
-					throw new AssumptionFailedError('This should never happen', 0, $e);
-				}
-			}
-			yield from Await::all($gens);
+			yield from $kitsManager->migrateOldRows($kits);
 			return;
 		}
 		try{
+			$gens = [];
 			/**
 			 * @var string $name
 			 * @var string $serializedArmor
@@ -426,13 +389,12 @@ final class ProperDuels extends PluginBase{
 		yield from Await::all($gens);
 	}
 
-	/** @throws \pocketmine\plugin\DisablePluginException */
-	private function getMergedDb(Config $unMarshaledConfig): RawQueries{
+	/**
+	 * @param array{'sqlite': string, 'mysql': string} $statements
+	 * @throws \pocketmine\plugin\DisablePluginException
+	 */
+	private function getMergedDb(Config $unMarshaledConfig, array $statements): RawQueries{
 		try{
-			$statements = [
-				'sqlite' => Path::join('sqlite', 'stmt.sql'),
-				'mysql' => Path::join('mysql', 'stmt.sql')
-			];
 			$mergedDb = new RawQueries(self::$database = libasynql::create(
 				$this,
 				[
@@ -447,24 +409,10 @@ final class ProperDuels extends PluginBase{
 						'schema' => $unMarshaledConfig->database->mysql->schema,
 						'port' => $unMarshaledConfig->database->mysql->port
 					],
-					'worker-limit' => $unMarshaledConfig->database->workerLimit
+					'worker-limit' => $unMarshaledConfig->database->type === DatabaseType::Sqlite3 ? 1 : $unMarshaledConfig->database->workerLimit
 				],
 				$statements
 			));
-			if($unMarshaledConfig->database->type === DatabaseType::Sqlite3){
-				$gens = [];
-				if(file_exists(Path::join($this->getDataFolder(), 'kits.sqlite'))){
-					$gens[] = $this->migrateKitsDatabase($unMarshaledConfig, $statements);
-				}
-				if(file_exists(Path::join($this->getDataFolder(), 'arenas.sqlite'))){
-					$gens[] = $this->migrateArenasDatabase($unMarshaledConfig, $statements);
-				}
-				Await::f2c(function() use ($mergedDb, $gens): Generator{
-					yield from $mergedDb->initForeignKeys();
-					yield from Await::all($gens);
-					$this->getLogger()->notice('Migrated arenas and kits from old database.');
-				}, catches: ['' => fn(Throwable $e) => throw $e]);
-			}
 		}catch(ExtensionMissingException|SqlError $e){
 			$this->getLogger()->error($e->getMessage());
 			throw new DisablePluginException;
@@ -472,15 +420,32 @@ final class ProperDuels extends PluginBase{
 		return $mergedDb;
 	}
 
+	/** @param array{'sqlite': string, 'mysql': string} $statements */
 	private function setupManagers(RawQueries $mergedDb,
 		Config $unMarshaledConfig,
 		PluginManager $pluginManager,
-		Server $server): void{
-		self::$kitManager = new Loading(function() use ($mergedDb, $unMarshaledConfig): Generator{
-			return yield from KitManager::create($mergedDb, $unMarshaledConfig->database->type);
+		Server $server,
+		array $statements): void{
+		self::$kitManager = new Loading(function() use ($statements, $mergedDb, $unMarshaledConfig): Generator{
+			return yield from KitManager::create($mergedDb, $unMarshaledConfig->database->type, function() use (
+				$statements,
+				$unMarshaledConfig
+			): Generator{
+				if(file_exists(Path::join($this->getDataFolder(), 'kits.sqlite'))){
+					yield from $this->migrateSQLiteKitsDatabase($unMarshaledConfig, $statements);
+				}
+			});
 		});
-		self::$arenaManager = new Loading(function() use ($mergedDb, $unMarshaledConfig): Generator{
-			return yield from ArenaManager::create($mergedDb, $unMarshaledConfig->database->type);
+		self::$arenaManager = new Loading(function() use ($statements, $mergedDb, $unMarshaledConfig): Generator{
+			yield from self::$kitManager->get();
+			return yield from ArenaManager::create($mergedDb, $unMarshaledConfig->database->type, function() use (
+				$statements,
+				$unMarshaledConfig
+			): Generator{
+				if(file_exists(Path::join($this->getDataFolder(), 'arenas.sqlite'))){
+					yield from $this->migrateSQLiteArenasDatabase($unMarshaledConfig, $statements);
+				}
+			});
 		});
 		self::$gameManager = new GameManager();
 		self::$sessionManager =  new SessionManager(
